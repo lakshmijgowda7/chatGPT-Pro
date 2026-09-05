@@ -102,7 +102,14 @@ class GoogleAuthCallbackRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr = Field(..., description="Registered user email address")
+    email: str = Field(..., description="Registered user email address")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_format(cls, v: str) -> str:
+        if not EMAIL_REGEX.match((v or "").strip()):
+            raise ValueError("Invalid email address format")
+        return v.strip().lower()
 
 
 class ResetPasswordRequest(BaseModel):
