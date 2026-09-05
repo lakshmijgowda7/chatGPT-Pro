@@ -1,0 +1,57 @@
+services:
+  # ============================================================================
+  # 1. ChatGPT Pro FastAPI Backend Service (24/7 Cloud Host)
+  # ============================================================================
+  - type: web
+    name: chatgpt-pro-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: BACKEND_HOST
+        value: "0.0.0.0"
+      - key: DATABASE_URL
+        value: sqlite:///./platform.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: LLM_PROVIDER
+        value: groq
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: qwen/qwen3.8-27b
+      - key: CORS_ORIGINS
+        value: '["*"]'
+
+  # ============================================================================
+  # 2. ChatGPT Pro Next.js Frontend Service (24/7 Cloud Host)
+  # ============================================================================
+  - type: web
+    name: chatgpt-pro-frontend
+    env: node
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: chatgpt-pro-backend
+          property: host
+          format: "https://{host}/api/v1"

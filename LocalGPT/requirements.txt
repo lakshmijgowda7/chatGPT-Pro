@@ -1,0 +1,12 @@
+# LocalGPT Dependencies (100% Offline & Local)
+torch
+transformers
+streamlit
+faiss-cpu
+sentence-transformers
+pypdf
+python-docx
+plotly
+numpy
+pandas
+scikit-learn
