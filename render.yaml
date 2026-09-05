@@ -49,9 +49,8 @@ services:
         value: 20.18.0
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
-      - key: NEXT_PUBLIC_API_URL
+      - key: BACKEND_HOST
         fromService:
           type: web
           name: chatgpt-pro-backend
           property: host
-          format: "https://{host}/api/v1"
