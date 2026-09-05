@@ -5,22 +5,29 @@ Defines request payloads, response models, and validation rules for registration
 
 from typing import Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
+import re
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class UserBase(BaseModel):
-    email: EmailStr = Field(..., description="User email address")
+    email: str = Field(..., description="User email address")
     name: Optional[str] = Field(None, max_length=255, description="Display name")
     full_name: Optional[str] = Field(None, max_length=255, description="Full name")
     is_active: bool = True
     is_superuser: bool = False
 
+    @field_validator("email")
+    @classmethod
+    def validate_email_format(cls, v: str) -> str:
+        if not EMAIL_REGEX.match((v or "").strip()):
+            raise ValueError("Invalid email address format")
+        return v.strip().lower()
 
-class UserCreate(BaseModel):
-    email: EmailStr = Field(..., description="User valid email address")
+
+class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=128, description="Plain password (min 8 chars)")
-    name: Optional[str] = Field(None, max_length=255, description="Display name")
-    full_name: Optional[str] = Field(None, max_length=255, description="Full name")
     profile: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom profile metadata")
 
     @field_validator("password")
@@ -32,8 +39,15 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr = Field(..., description="Registered email address")
+    email: str = Field(..., description="Registered email address")
     password: str = Field(..., min_length=1, description="Account password")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_format(cls, v: str) -> str:
+        if not EMAIL_REGEX.match((v or "").strip()):
+            raise ValueError("Invalid email address format")
+        return v.strip().lower()
 
 
 class UserResponse(BaseModel):
