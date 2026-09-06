@@ -33,22 +33,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const { user } = useAuth();
   const isGuest = Boolean(
-    user?.profile?.is_anonymous ||
-    user?.id?.startsWith("guest_") ||
-    user?.email?.startsWith("guest_") ||
-    user?.email?.toLowerCase().includes("guest")
+    user &&
+    (user?.profile?.is_anonymous === true ||
+     user?.email?.includes("@localgpt.user") ||
+     user?.email?.startsWith("guest_") ||
+     user?.id?.startsWith("guest_")) &&
+    !user?.email?.includes("@gmail.com") &&
+    user?.profile?.provider !== "google" &&
+    user?.profile?.provider !== "password"
   );
 
   const [guestCount, setGuestCount] = useState<number>(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      if (!isGuest) {
+        setGuestCount(0);
+        return;
+      }
       const saved = parseInt(localStorage.getItem("localgpt_guest_chat_count") || "0", 10);
       setGuestCount(saved);
     }
-  }, [isStreaming]);
+  }, [isStreaming, isGuest]);
 
-  const guestRemaining = Math.max(0, GUEST_MAX_CHATS - guestCount);
+  const guestRemaining = isGuest ? Math.max(0, GUEST_MAX_CHATS - guestCount) : Infinity;
   const isGuestLimitReached = isGuest && guestRemaining <= 0;
 
   const [text, setText] = useState("");

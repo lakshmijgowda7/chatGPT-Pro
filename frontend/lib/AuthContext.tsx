@@ -28,7 +28,7 @@ interface AuthContextType {
   isFirebaseConfigured: boolean;
   login: (credentials: UserLogin) => Promise<void>;
   register: (payload: UserRegister) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (preferredEmail?: string) => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
   signInAsGuest: (name?: string) => Promise<void>;
@@ -97,6 +97,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(res.user as User);
     if (typeof window !== "undefined") {
       localStorage.setItem("localgpt_cached_user", JSON.stringify(res.user));
+      // If user is authenticated with Google or Email, clear guest limits
+      if (!res.user?.profile?.is_anonymous && !res.user?.email?.startsWith("guest_")) {
+        localStorage.removeItem("localgpt_guest_chat_count");
+      }
     }
     // Attempt backend sync
     try {
@@ -104,17 +108,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(backendUser);
       if (typeof window !== "undefined") {
         localStorage.setItem("localgpt_cached_user", JSON.stringify(backendUser));
+        if (!backendUser?.profile?.is_anonymous && !backendUser?.email?.startsWith("guest_")) {
+          localStorage.removeItem("localgpt_guest_chat_count");
+        }
       }
     } catch {
       // Backend is optional/local fallback
     }
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (preferredEmail?: string) => {
     setIsLoading(true);
     try {
-      const res = await fbSignInWithGoogle();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("localgpt_guest_chat_count");
+      }
+      const res = await fbSignInWithGoogle(preferredEmail);
       await handleFirebaseSuccess(res);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("localgpt_guest_chat_count");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -201,6 +214,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await logoutUser();
       if (typeof window !== "undefined") {
         localStorage.removeItem("localgpt_cached_user");
+        localStorage.removeItem("localgpt_guest_chat_count");
       }
       setUser(null);
     } finally {

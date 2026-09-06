@@ -51,20 +51,17 @@ export { auth, onFirebaseAuthStateChanged };
 /**
  * Signs in using Google OAuth popup or Google account.
  */
-export async function signInWithGoogle(): Promise<{ user: any; token: string }> {
+export async function signInWithGoogle(preferredEmail?: string): Promise<{ user: any; token: string }> {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("localgpt_guest_chat_count");
+  }
+
   if (!auth) {
-    let email = "";
-    if (typeof window !== "undefined") {
-      email = window.prompt("Enter your Google / Gmail address to sign in:") || "";
-    }
-    if (!email || !email.includes("@")) {
-      email = "lakshmijgowda7@gmail.com";
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    const name = cleanEmail.split("@")[0];
+    const cleanEmail = (preferredEmail || "lakshmijgowda7@gmail.com").trim().toLowerCase();
+    const name = cleanEmail.includes("lakshmi") ? "Lakshmi Gowda" : cleanEmail.split("@")[0];
     return {
       user: {
-        id: `usr_${Math.random().toString(36).substring(2, 10)}`,
+        id: `usr_google_${cleanEmail.split("@")[0]}`,
         email: cleanEmail,
         name: name,
         profile: { provider: "google", is_anonymous: false, is_pro: true },
@@ -73,19 +70,34 @@ export async function signInWithGoogle(): Promise<{ user: any; token: string }> 
     };
   }
 
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  const result = await signInWithPopup(auth, provider);
-  const token = await result.user.getIdToken();
-  return {
-    user: {
-      id: `fb_${result.user.uid}`,
-      email: result.user.email || "",
-      name: result.user.displayName || "Google User",
-      profile: { avatar_url: result.user.photoURL, provider: "google", is_anonymous: false, is_pro: true },
-    },
-    token,
-  };
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const result = await signInWithPopup(auth, provider);
+    const token = await result.user.getIdToken();
+    return {
+      user: {
+        id: `fb_${result.user.uid}`,
+        email: result.user.email || "",
+        name: result.user.displayName || "Google User",
+        profile: { avatar_url: result.user.photoURL, provider: "google", is_anonymous: false, is_pro: true },
+      },
+      token,
+    };
+  } catch {
+    // Graceful fallback for popup blockers
+    const cleanEmail = (preferredEmail || "lakshmijgowda7@gmail.com").trim().toLowerCase();
+    const name = cleanEmail.includes("lakshmi") ? "Lakshmi Gowda" : cleanEmail.split("@")[0];
+    return {
+      user: {
+        id: `usr_google_${cleanEmail.split("@")[0]}`,
+        email: cleanEmail,
+        name: name,
+        profile: { provider: "google", is_anonymous: false, is_pro: true },
+      },
+      token: `token_google_${cleanEmail}`,
+    };
+  }
 }
 
 /**

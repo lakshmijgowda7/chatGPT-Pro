@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, signInWithGoogle } = useAuth();
 
   const filteredCount = conversations.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase().trim())
@@ -121,40 +121,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-gray-800/80 bg-[#141414]">
         {isAuthenticated && user ? (
           /* Authenticated User Profile Card */
-          <div className="flex items-center justify-between p-2 rounded-xl bg-[#1e1e1e] border border-gray-800/80">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Avatar role="user" size="sm" isOnline={true} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-semibold text-gray-200 truncate">
-                    {user.name || user.email.split("@")[0]}
-                  </span>
-                  <span className="text-[8px] font-black px-1 py-0.2 rounded bg-gradient-to-r from-amber-400 to-orange-500 text-black">
-                    PRO
-                  </span>
+          <div className="p-2 rounded-xl bg-[#1e1e1e] border border-gray-800/80">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar role="user" size="sm" isOnline={true} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-semibold text-gray-200 truncate">
+                      {user.name || user.email.split("@")[0]}
+                    </span>
+                    <span className={`text-[8px] font-black px-1 py-0.2 rounded ${
+                      user.profile?.is_anonymous
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        : "bg-gradient-to-r from-amber-400 to-orange-500 text-black"
+                    }`}>
+                      {user.profile?.is_anonymous ? "GUEST" : "PRO"}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-gray-400 truncate">
+                    {user.email}
+                  </div>
                 </div>
-                <div className="text-[10px] text-gray-400 truncate">
-                  {user.email}
-                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-100 hover:bg-gray-700/60 transition-colors"
+                  title="Settings & System Config"
+                >
+                  <Settings size={15} />
+                </button>
+                <button
+                  onClick={() => logout()}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                  title="Sign Out"
+                >
+                  <LogOut size={15} />
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            {user.profile?.is_anonymous && (
               <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-100 hover:bg-gray-700/60 transition-colors"
-                title="Settings & System Config"
+                onClick={() => signInWithGoogle()}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-[11px] hover:opacity-95 transition-all shadow"
               >
-                <Settings size={15} />
+                <Sparkles size={12} />
+                <span>Switch to Google (Unlimited)</span>
               </button>
-              <button
-                onClick={() => logout()}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
-                title="Sign Out"
-              >
-                <LogOut size={15} />
-              </button>
-            </div>
+            )}
           </div>
         ) : (
           /* Guest / Logged Out Controls */

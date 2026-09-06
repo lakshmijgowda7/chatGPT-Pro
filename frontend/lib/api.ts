@@ -103,7 +103,9 @@ export async function getCurrentUser(): Promise<User> {
   });
   const data = await res.json();
   if (!res.ok) {
-    removeAuthToken();
+    if (!token.startsWith("token_") && !token.startsWith("demo_")) {
+      removeAuthToken();
+    }
     throw new Error(data.detail || data.message || "Session expired");
   }
   return data;

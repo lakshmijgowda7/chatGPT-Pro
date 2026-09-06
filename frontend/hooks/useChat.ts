@@ -14,13 +14,18 @@ export function useChat(
   onStreamComplete?: () => void
 ) {
   const { user } = useAuth();
-  // Any real email (like gmail) is an authenticated Pro user, NOT a guest
+  // A user is ONLY a guest if explicitly browsing via guest pass.
+  // Anyone signing in with Google or Email has Unlimited Chats.
   const isGuest = Boolean(
-    !user ||
-    user?.profile?.is_anonymous === true ||
-    user?.email?.includes("@localgpt.user") ||
-    user?.email?.startsWith("guest_")
-  ) && !user?.email?.includes("@gmail.com") && !user?.email?.includes("@");
+    user &&
+    (user.profile?.is_anonymous === true ||
+     user.email?.includes("@localgpt.user") ||
+     user.email?.startsWith("guest_") ||
+     user.id?.startsWith("guest_")) &&
+    !user.email?.includes("@gmail.com") &&
+    user.profile?.provider !== "google" &&
+    user.profile?.provider !== "password"
+  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -33,10 +38,14 @@ export function useChat(
   // Sync guest chat count from local storage
   useEffect(() => {
     if (typeof window !== "undefined") {
+      if (!isGuest) {
+        setGuestChatCount(0);
+        return;
+      }
       const saved = parseInt(localStorage.getItem("localgpt_guest_chat_count") || "0", 10);
       setGuestChatCount(saved);
     }
-  }, []);
+  }, [isGuest]);
 
   const guestChatsRemaining = isGuest ? Math.max(0, GUEST_MAX_CHATS - guestChatCount) : Infinity;
 
@@ -105,7 +114,7 @@ export function useChat(
           id: `limit_${Date.now()}`,
           conversation_id: conversationId || "",
           role: "assistant",
-          content: `⚠️ **Guest Chat Limit Reached (${GUEST_MAX_CHATS}/${GUEST_MAX_CHATS} chats used)**\n\nYou have used all 5 of your free guest chats on **ChatGPT Pro**.\n\n✨ **Unlock Unlimited Access**: Please sign in with **Google** or **Email** to continue chatting with unlimited fast responses, persistent memory, and document intelligence!`,
+          content: `Guest Chat Limit Reached (${GUEST_MAX_CHATS}/${GUEST_MAX_CHATS} chats used)\n\nYou have used all 5 of your free guest chats on ChatGPT Pro.\n\nUnlock Unlimited Access: Please sign in with Google or Email to continue chatting with unlimited fast responses, persistent memory, and document intelligence!`,
           created_at: Date.now() / 1000,
         };
         setMessages((prev) => [...prev, limitMsg]);
