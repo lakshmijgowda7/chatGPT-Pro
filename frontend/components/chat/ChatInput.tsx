@@ -31,7 +31,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onClearStagedText,
   onOpenAuth,
 }) => {
-  const { user } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
   const isGuest = Boolean(
     user &&
     (user?.profile?.is_anonymous === true ||
@@ -81,7 +81,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSubmit = () => {
     if (isGuestLimitReached) {
-      if (onOpenAuth) onOpenAuth();
+      if (signInWithGoogle) signInWithGoogle();
       return;
     }
     if (!text.trim() || isStreaming || disabled) return;
@@ -103,7 +103,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <div className="p-4 bg-[#212121] border-t border-gray-800/80 max-w-4xl mx-auto w-full">
       {/* Guest Chat Remaining Counter Banner */}
       {isGuest && (
-        <div className="mb-2.5 flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-[#2a2a2a] border border-amber-500/30 text-xs">
+        <div className="mb-2.5 flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#2a2a2a] border border-amber-500/30 text-xs">
           <div className="flex items-center gap-2 text-amber-300">
             <Sparkles size={14} className="text-amber-400" />
             <span>
@@ -114,14 +114,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               chats remaining
             </span>
           </div>
-          {onOpenAuth && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={onOpenAuth}
-              className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 transition-colors"
+              onClick={() => signInWithGoogle()}
+              className="text-[11px] font-bold px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition-all shadow"
             >
-              Sign In for Unlimited
+              Continue with Google (Unlimited)
             </button>
-          )}
+            {onOpenAuth && (
+              <button
+                onClick={onOpenAuth}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -145,7 +153,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onKeyDown={handleKeyDown}
           placeholder={
             isGuestLimitReached
-              ? "Guest chat limit reached (5/5). Click 'Sign In' above to unlock unlimited chats."
+              ? "Guest chat limit reached (5/5). Click 'Continue with Google' above to unlock unlimited chats."
               : mode === "rag"
               ? "Ask questions grounded in indexed documents..."
               : "Message ChatGPT Pro..."
@@ -168,9 +176,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         ) : isGuestLimitReached ? (
           <button
             type="button"
-            onClick={onOpenAuth}
-            className="rounded-xl w-9 h-9 p-0 shrink-0 bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center transition-all shadow-md font-bold"
-            title="Sign in to unlock unlimited chats"
+            onClick={() => signInWithGoogle()}
+            className="rounded-xl w-9 h-9 p-0 shrink-0 bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center transition-all shadow-md font-bold cursor-pointer"
+            title="Click to unlock unlimited chats with Google"
           >
             <Lock size={15} />
           </button>

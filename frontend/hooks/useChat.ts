@@ -51,8 +51,10 @@ export function useChat(
 
   // Load message history from API / localStorage when conversation changes
   useEffect(() => {
+    // Immediately clear messages so previous chat does not leak into the new one
+    setMessages([]);
+
     if (!conversationId) {
-      setMessages([]);
       return;
     }
 
@@ -68,16 +70,20 @@ export function useChat(
         }
       })
       .catch(() => {
-        // Fallback to local storage if backend is offline
+        // Fallback to local storage if backend is offline or conversation is newly created locally
         if (typeof window !== "undefined") {
           const cached = localStorage.getItem(`localgpt_conv_${conversationId}`);
           if (cached && isMounted) {
             try {
               setMessages(JSON.parse(cached));
+              return;
             } catch {
-              setMessages([]);
+              // ignore
             }
           }
+        }
+        if (isMounted) {
+          setMessages([]);
         }
       })
       .finally(() => {

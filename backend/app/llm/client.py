@@ -12,6 +12,18 @@ from app.core.config import settings
 from app.llm.base import BaseLLMClient
 
 
+def _clean_fallback_text(s: str) -> str:
+    cleaned = s.replace("*", "").replace("#", "")
+    lines = [
+        line for line in cleaned.splitlines()
+        if "Tip: To unlock" not in line
+        and "connect your free" not in line
+        and "Note: Currently using" not in line
+        and "Settings ⚙️" not in line
+    ]
+    return "\n".join(lines).strip()
+
+
 def generate_local_fallback(messages: List[Dict[str, str]], model_name: str = "Local Engine") -> str:
     """
     Generates intelligent conversational responses when external cloud API keys are not yet provided.
@@ -30,12 +42,11 @@ def generate_local_fallback(messages: List[Dict[str, str]], model_name: str = "L
         question_part = parts[1].strip() if len(parts) > 1 else user_prompt
 
         if context_part:
-            return (
-                f"### 📄 Document Analysis Results\n\n"
-                f"Based on your uploaded document knowledge base, here is what was found regarding **\"{question_part}\"**:\n\n"
+            return _clean_fallback_text(
+                f"Document Analysis Results\n\n"
+                f"Based on your uploaded document knowledge base, here is what was found regarding \"{question_part}\":\n\n"
                 f"{context_part[:1200]}\n\n"
-                f"---\n"
-                f"*(Grounded from your uploaded documents)*"
+                f"Grounded from your uploaded documents."
             )
 
     # 1. Status and well-being inquiries ("how are you", "what's up", etc.)
@@ -43,121 +54,113 @@ def generate_local_fallback(messages: List[Dict[str, str]], model_name: str = "L
         "how are you", "how r u", "how are u", "how's it going", "how is it going",
         "how do you do", "what's up", "whats up", "how have you been", "how is your day"
     ]):
-        return (
-            "I'm doing great, thank you for asking! 😊\n\n"
-            "All systems are running smoothly and I'm ready to assist you. I can help you answer questions, brainstorm ideas, write code, or search through documents you upload.\n\n"
+        return _clean_fallback_text(
+            "I am doing great, thank you for asking! 😊\n\n"
+            "All systems are running smoothly and I am ready to assist you. I can help you answer questions, brainstorm ideas, write code, or search through documents you upload.\n\n"
             "How is your day going? What can I help you with today?"
         )
 
     # 2. Greetings
     if cleaned in ["hi", "hello", "hey", "hola", "greetings", "hi there", "hello there", "good morning", "good afternoon", "good evening"]:
-        return (
-            "Hello! 👋 Welcome to **LocalGPT**.\n\n"
-            "I'm your AI assistant. How can I help you today? You can:\n"
-            "- 💬 Ask me any question or converse freely.\n"
-            "- 📂 Click **Upload Knowledge** to upload documents (PDF, DOCX, TXT, CSV) for RAG question-answering.\n"
-            "- ⚙️ Connect your **Groq**, **OpenAI**, or **Gemini** API key in **Settings (⚙️)** for high-speed cloud inference with Llama 3.3 70B."
+        return _clean_fallback_text(
+            "Hello! 👋 Welcome to ChatGPT Pro.\n\n"
+            "I am your AI assistant. How can I help you today? You can:\n"
+            "- Ask me any question or converse freely.\n"
+            "- Click Paperclip to upload documents (PDF, DOCX, TXT, CSV) for question answering."
         )
 
     # 3. Gratitude and polite closings
     if any(t in cleaned for t in ["thank you", "thanks", "thx", "appreciate it", "good job", "awesome"]):
-        return (
-            "You're very welcome! 😊 I'm glad I could help. Let me know if there's anything else you'd like to work on!"
+        return _clean_fallback_text(
+            "You are very welcome! 😊 I am glad I could help. Let me know if there is anything else you would like to work on!"
         )
 
     if any(b in cleaned for b in ["bye", "goodbye", "see you", "see ya"]):
-        return (
+        return _clean_fallback_text(
             "Goodbye! 👋 Have a wonderful day ahead, and feel free to reach out anytime you need assistance."
         )
 
     # 4. Jokes and humor
     if any(j in cleaned for j in ["joke", "funny", "laugh"]):
-        return (
-            "Here's a good one for you! 😄\n\n"
-            "**Why do programmers prefer dark mode?**\n\n"
-            "*Because light attracts bugs!* 🐛💻\n\n"
-            "Got any favorite coding jokes of your own?"
+        return _clean_fallback_text(
+            "Why do programmers prefer dark mode?\n\nBecause light attracts bugs! 😄"
         )
 
     # 5. Self-identity / Capabilities
     if any(q in cleaned for q in ["who are you", "what can you do", "help", "what is this", "features", "your name"]):
-        return (
-            "### 🌟 About LocalGPT Cloud AI Platform\n\n"
-            "I am the **LocalGPT Assistant**, designed for conversational intelligence, coding assistance, and document RAG.\n\n"
-            "**Key Features:**\n"
-            "1. **Multi-Turn Chat**: Full session memory and chat history management.\n"
-            "2. **Document RAG (Retrieval-Augmented Generation)**: Grounded question answering with vector similarity search over your uploaded files.\n"
-            "3. **Multi-Provider LLM Switcher**: Switch between Groq (Llama 3.3), OpenAI (GPT-4o), Gemini, and OpenRouter at runtime via Settings.\n\n"
+        return _clean_fallback_text(
+            "About ChatGPT Pro Platform\n\n"
+            "I am the ChatGPT Pro Assistant, designed for conversational intelligence, coding assistance, and document intelligence.\n\n"
+            "Key Features:\n"
+            "1. Multi-Turn Chat: Full session memory and chat history management.\n"
+            "2. Document Intelligence (RAG): Grounded question answering with vector similarity search over your uploaded files.\n"
+            "3. High-Speed Inference: Real-time streaming responses.\n\n"
             "How can I help you right now?"
         )
 
     # 6. Explanations and concept inquiries
     if any(k in cleaned for k in ["what is ai", "artificial intelligence", "define ai", "meaning of ai", "explain ai"]):
-        return (
-            "### 🤖 What is Artificial Intelligence (AI)?\n\n"
-            "**Artificial Intelligence (AI)** refers to the simulation of human intelligence in machines programmed to think, learn, reason, and solve problems like humans.\n\n"
-            "#### 🔑 Key Subfields of AI:\n"
-            "1. **Machine Learning (ML)**: Algorithms that learn from data and improve over time without being explicitly hardcoded.\n"
-            "2. **Deep Learning (DL)**: Neural networks with many layers (inspired by biological brains) capable of learning intricate hierarchical representations.\n"
-            "3. **Natural Language Processing (NLP)**: Enabling computers to understand, summarize, and generate human speech and text (e.g., ChatGPT, Claude).\n"
-            "4. **Computer Vision**: Interpreting visual data from images and videos for tasks like object recognition and self-driving cars.\n"
-            "5. **Robotics**: Combining hardware and AI to perform physical tasks autonomously.\n\n"
-            "#### 💡 Levels of AI:\n"
-            "- **Narrow / Weak AI**: Specialized in a single domain (e.g., search ranking, Siri, recommendation engines). All existing AI today is Narrow AI.\n"
-            "- **General AI (AGI)**: Hypothetical machine intelligence matching human capabilities across any intellectual task.\n"
-            "- **Super AI (ASI)**: Future AI surpassing all human capability combined.\n\n"
-            "*(💡 Tip: To unlock live unrestricted generation with 70B+ models, connect your free **Groq** or **OpenAI** API key in **Settings ⚙️**!)*"
+        return _clean_fallback_text(
+            "What is Artificial Intelligence (AI)?\n\n"
+            "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines programmed to think, learn, reason, and solve problems like humans.\n\n"
+            "Key Subfields of AI:\n"
+            "1. Machine Learning (ML): Algorithms that learn from data and improve over time without being explicitly hardcoded.\n"
+            "2. Deep Learning (DL): Neural networks with many layers capable of learning intricate representations.\n"
+            "3. Natural Language Processing (NLP): Enabling computers to understand, summarize, and generate human speech and text (e.g. ChatGPT, Claude).\n"
+            "4. Computer Vision: Interpreting visual data from images and videos for tasks like object recognition.\n"
+            "5. Robotics: Combining hardware and AI to perform physical tasks autonomously.\n\n"
+            "Levels of AI:\n"
+            "- Narrow / Weak AI: Specialized in a single domain (e.g. search ranking, recommendations). All existing AI today is Narrow AI.\n"
+            "- General AI (AGI): Hypothetical machine intelligence matching human capabilities across any intellectual task.\n"
+            "- Super AI (ASI): Future AI surpassing all human capability combined."
         )
 
     if any(k in cleaned for k in ["machine learning", "what is ml"]):
-        return (
-            "### 🧠 What is Machine Learning (ML)?\n\n"
-            "**Machine Learning** is a branch of Artificial Intelligence focused on building algorithms that learn patterns from data and make predictions without explicit rules.\n\n"
-            "#### 📚 Three Primary Types of ML:\n"
-            "1. **Supervised Learning**: Trained on labeled input-output pairs (e.g., spam detection, price prediction).\n"
-            "2. **Unsupervised Learning**: Finds hidden structure in unlabeled data (e.g., clustering, customer segmentation).\n"
-            "3. **Reinforcement Learning**: Learns optimal strategies through trial-and-error rewards and penalties (e.g., game playing, robotics).\n\n"
-            "*(💡 Tip: Connect your API key in **Settings ⚙️** for live cloud LLM reasoning!)*"
+        return _clean_fallback_text(
+            "What is Machine Learning (ML)?\n\n"
+            "Machine Learning is a branch of Artificial Intelligence focused on building algorithms that learn patterns from data and make predictions without explicit rules.\n\n"
+            "Three Primary Types of ML:\n"
+            "1. Supervised Learning: Trained on labeled input-output pairs.\n"
+            "2. Unsupervised Learning: Finds hidden structure in unlabeled data.\n"
+            "3. Reinforcement Learning: Learns optimal strategies through trial-and-error rewards and penalties."
         )
 
     if any(k in cleaned for k in ["what is an llm", "what is llm", "large language model"]):
-        return (
-            "### 📖 What is a Large Language Model (LLM)?\n\n"
-            "A **Large Language Model (LLM)** is a deep neural network trained on massive web-scale text corpora using the **Transformer** architecture.\n\n"
-            "#### 🏗️ Key Principles:\n"
-            "- **Self-Attention**: Computes dynamic relationships between all tokens across a prompt.\n"
-            "- **Autoregressive Generation**: Predicts the next most probable token iteratively.\n"
-            "- **Instruction Tuning & RLHF**: Aligns the base model to follow user directions and adhere to helpful, harmless responses.\n"
-            "- **Examples**: Llama 3.3 (70B), GPT-4o, Claude 3.5, Gemini 2.0 Flash."
+        return _clean_fallback_text(
+            "What is a Large Language Model (LLM)?\n\n"
+            "A Large Language Model (LLM) is a deep neural network trained on massive web-scale text corpora using the Transformer architecture.\n\n"
+            "Key Principles:\n"
+            "- Self-Attention: Computes dynamic relationships between all tokens across a prompt.\n"
+            "- Autoregressive Generation: Predicts the next most probable token iteratively.\n"
+            "- Instruction Tuning: Aligns the base model to follow user directions and adhere to helpful responses."
         )
 
     if any(k in cleaned for k in ["what is rag", "retrieval augmented generation", "retrieval-augmented"]):
-        return (
-            "### 🔍 What is Retrieval-Augmented Generation (RAG)?\n\n"
-            "**Retrieval-Augmented Generation (RAG)** bridges private documents and Large Language Models by retrieving relevant text chunks before generating answers.\n\n"
-            "#### ⚙️ How RAG Works:\n"
-            "1. **Chunking & Embeddings**: Files are split and indexed into vector representations.\n"
-            "2. **Semantic Search**: The user query is matched against the closest document chunks.\n"
-            "3. **Prompt Augmentation**: The context is injected into the LLM prompt.\n"
-            "4. **Grounded Answer**: The model produces an accurate, verifiable answer with citations."
+        return _clean_fallback_text(
+            "What is Retrieval-Augmented Generation (RAG)?\n\n"
+            "Retrieval-Augmented Generation (RAG) bridges private documents and Large Language Models by retrieving relevant text chunks before generating answers.\n\n"
+            "How RAG Works:\n"
+            "1. Chunking and Embeddings: Files are split and indexed into vector representations.\n"
+            "2. Semantic Search: The user query is matched against the closest document chunks.\n"
+            "3. Prompt Augmentation: The context is injected into the LLM prompt.\n"
+            "4. Grounded Answer: The model produces an accurate, verifiable answer with citations."
         )
 
     if "python" in cleaned:
-        return (
-            "### 🐍 Python Overview\n\n"
-            "**Python** is a versatile, high-level programming language designed with readability and simplicity in mind.\n\n"
-            "- **Applications**: Artificial Intelligence, Machine Learning, Web Backend (FastAPI, Django), Automation, and Data Science.\n"
-            "- **Why it's popular**: Dynamic typing, huge standard library, and massive active developer community."
+        return _clean_fallback_text(
+            "Python Overview\n\n"
+            "Python is a versatile, high-level programming language designed with readability and simplicity in mind.\n\n"
+            "- Applications: Artificial Intelligence, Machine Learning, Web Backend (FastAPI, Django), Automation, and Data Science.\n"
+            "- Why it is popular: Dynamic typing, huge standard library, and massive active developer community."
         )
 
     # 7. General intelligent response
-    return (
-        f"That's an interesting question regarding **\"{user_prompt}\"**!\n\n"
+    return _clean_fallback_text(
+        f"That is an interesting question regarding \"{user_prompt}\"!\n\n"
         f"Here are key points to consider:\n"
-        f"1. **Analysis**: Exploring this requires breaking down the core objectives and examining practical use cases.\n"
-        f"2. **Best Practices**: Focus on clarity, modular structure, and verifiable outcomes.\n"
-        f"3. **Next Steps**: Let me know if you would like me to elaborate on any specific detail, provide code, or structure a complete plan.\n\n"
-        f"*(💡 Note: Currently using the built-in local assistant. To connect live 70B cloud models like Llama 3.3 or GPT-4o, you can paste an API key in **Settings ⚙️**).* "
+        f"1. Analysis: Exploring this requires breaking down the core objectives and examining practical use cases.\n"
+        f"2. Best Practices: Focus on clarity, modular structure, and verifiable outcomes.\n"
+        f"3. Next Steps: Let me know if you would like me to elaborate on any specific detail, provide code, or structure a complete plan."
     )
 
 

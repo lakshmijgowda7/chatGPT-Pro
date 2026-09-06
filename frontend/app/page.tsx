@@ -87,6 +87,11 @@ export default function Home() {
     return <AuthGate />;
   }
 
+  const handleNewChat = () => {
+    clearMessages();
+    createChat();
+  };
+
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
 
   // 3. User is authenticated -> Open ChatGPT Pro Chat Box and Workspace
@@ -99,7 +104,7 @@ export default function Home() {
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         onSelect={setActiveConversationId}
-        onCreate={createChat}
+        onCreate={handleNewChat}
         onRename={renameChat}
         onDelete={deleteChat}
         settings={settings}
@@ -115,7 +120,7 @@ export default function Home() {
         onRegenerate={regenerate}
         onEdit={editAndResend}
         onFeedback={setFeedback}
-        onNewChat={createChat}
+        onNewChat={handleNewChat}
         onClearMessages={clearMessages}
         onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
       />
