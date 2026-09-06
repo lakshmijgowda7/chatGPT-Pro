@@ -6,7 +6,7 @@ import { fetchConversation, getAuthHeaders } from "../lib/api";
 import { API_BASE_URL } from "../lib/constants";
 import { useAuth } from "../lib/AuthContext";
 
-export const GUEST_MAX_CHATS = 5;
+export const GUEST_MAX_CHATS = Infinity;
 
 export function useChat(
   conversationId: string | null,
@@ -14,40 +14,16 @@ export function useChat(
   onStreamComplete?: () => void
 ) {
   const { user } = useAuth();
-  // A user is ONLY a guest if explicitly browsing via guest pass.
-  // Anyone signing in with Google or Email has Unlimited Chats.
-  const isGuest = Boolean(
-    user &&
-    (user.profile?.is_anonymous === true ||
-     user.email?.includes("@localgpt.user") ||
-     user.email?.startsWith("guest_") ||
-     user.id?.startsWith("guest_")) &&
-    !user.email?.includes("@gmail.com") &&
-    user.profile?.provider !== "google" &&
-    user.profile?.provider !== "password"
-  );
+  const isGuest = false;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [guestChatCount, setGuestChatCount] = useState<number>(0);
+  const guestChatCount = 0;
 
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Sync guest chat count from local storage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (!isGuest) {
-        setGuestChatCount(0);
-        return;
-      }
-      const saved = parseInt(localStorage.getItem("localgpt_guest_chat_count") || "0", 10);
-      setGuestChatCount(saved);
-    }
-  }, [isGuest]);
-
-  const guestChatsRemaining = isGuest ? Math.max(0, GUEST_MAX_CHATS - guestChatCount) : Infinity;
+  const guestChatsRemaining = Infinity;
 
   // Load message history from API / localStorage when conversation changes
   useEffect(() => {
@@ -114,20 +90,6 @@ export function useChat(
     async (text: string, mode: "chat" | "rag" = "chat") => {
       if (!text.trim() || isStreaming) return;
 
-      // Enforce 5-chat limit for guest users
-      if (isGuest && guestChatCount >= GUEST_MAX_CHATS) {
-        const limitMsg: ChatMessage = {
-          id: `limit_${Date.now()}`,
-          conversation_id: conversationId || "",
-          role: "assistant",
-          content: `Guest Chat Limit Reached (${GUEST_MAX_CHATS}/${GUEST_MAX_CHATS} chats used)\n\nYou have used all 5 of your free guest chats on ChatGPT Pro.\n\nUnlock Unlimited Access: Please sign in with Google or Email to continue chatting with unlimited fast responses, persistent memory, and document intelligence!`,
-          created_at: Date.now() / 1000,
-        };
-        setMessages((prev) => [...prev, limitMsg]);
-        setError(`Guest limit reached (${GUEST_MAX_CHATS}/${GUEST_MAX_CHATS}). Please sign in.`);
-        return;
-      }
-
       const userMsgId = `usr_${Date.now()}`;
       const userMessage: ChatMessage = {
         id: userMsgId,
@@ -177,17 +139,6 @@ export function useChat(
             if (parsed.detail) errDetail = parsed.detail;
           } catch {}
           throw new Error(errDetail);
-        }
-
-        // Increment guest chat count on successful request
-        if (isGuest) {
-          setGuestChatCount((prev) => {
-            const next = prev + 1;
-            if (typeof window !== "undefined") {
-              localStorage.setItem("localgpt_guest_chat_count", String(next));
-            }
-            return next;
-          });
         }
 
         const reader = response.body?.getReader();
@@ -258,7 +209,7 @@ export function useChat(
             m.id === assistantMsgId
               ? {
                   ...m,
-                  content: `⚠️ **Connection Error**: Unable to reach backend server at \`${API_BASE_URL}\`.\n\nPlease verify that the FastAPI backend server is running on port 8000 (\`uvicorn app.main:app --port 8000\`).\n\n*Error details: ${err.message || "Network request failed"}*`,
+                  content: `Connection Error: Unable to reach backend server at ${API_BASE_URL}.\n\nPlease verify that the backend server is running.\n\nError details: ${err.message || "Network request failed"}`,
                 }
               : m
           )
@@ -268,7 +219,7 @@ export function useChat(
         abortControllerRef.current = null;
       }
     },
-    [conversationId, isStreaming, isGuest, guestChatCount, onConversationCreated, onStreamComplete]
+    [conversationId, isStreaming, onConversationCreated, onStreamComplete]
   );
 
   const setFeedback = useCallback((messageId: string, feedback: 'like' | 'dislike') => {

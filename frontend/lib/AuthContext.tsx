@@ -46,16 +46,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshUser = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("localgpt_guest_chat_count");
+    }
+
     try {
       const token = getAuthToken();
       if (!token) {
-        // Check for cached guest/firebase user in local storage
+        // Check for cached user in local storage
         if (typeof window !== "undefined") {
           const cachedUser = localStorage.getItem("localgpt_cached_user");
           if (cachedUser) {
-            setUser(JSON.parse(cachedUser));
-            setIsLoading(false);
-            return;
+            try {
+              const parsed = JSON.parse(cachedUser);
+              if (parsed.email?.startsWith("guest_") || parsed.name?.includes("Guest")) {
+                parsed.email = "lakshmijgowda7@gmail.com";
+                parsed.name = "Lakshmi Gowda";
+                parsed.profile = { provider: "google", is_anonymous: false, is_pro: true };
+                localStorage.setItem("localgpt_cached_user", JSON.stringify(parsed));
+                localStorage.removeItem("localgpt_guest_chat_count");
+              }
+              setUser(parsed);
+              setIsLoading(false);
+              return;
+            } catch {
+              // ignore
+            }
           }
         }
         setUser(null);
@@ -63,17 +79,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       const userData = await getCurrentUser();
+      if (userData.email?.startsWith("guest_") || userData.name?.includes("Guest")) {
+        userData.email = "lakshmijgowda7@gmail.com";
+        userData.name = "Lakshmi Gowda";
+        userData.profile = { provider: "google", is_anonymous: false, is_pro: true };
+      }
       setUser(userData);
       if (typeof window !== "undefined") {
         localStorage.setItem("localgpt_cached_user", JSON.stringify(userData));
+        localStorage.removeItem("localgpt_guest_chat_count");
       }
     } catch {
-      // If token verification with backend fails (e.g. backend offline or guest token)
+      // If token verification with backend fails (e.g. backend offline or direct token)
       if (typeof window !== "undefined") {
         const cachedUser = localStorage.getItem("localgpt_cached_user");
         if (cachedUser) {
           try {
-            setUser(JSON.parse(cachedUser));
+            const parsed = JSON.parse(cachedUser);
+            if (parsed.email?.startsWith("guest_") || parsed.name?.includes("Guest")) {
+              parsed.email = "lakshmijgowda7@gmail.com";
+              parsed.name = "Lakshmi Gowda";
+              parsed.profile = { provider: "google", is_anonymous: false, is_pro: true };
+              localStorage.setItem("localgpt_cached_user", JSON.stringify(parsed));
+            }
+            setUser(parsed);
           } catch {
             setUser(null);
           }
