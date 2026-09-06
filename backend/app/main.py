@@ -40,12 +40,18 @@ async def lifespan(app: FastAPI):
     
     # Initialize / migrate database
     try:
-        run_migrations()
-        logger.info("Database migrations applied successfully.")
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        if "users" in existing_tables:
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables verified.")
+        else:
+            run_migrations()
+            logger.info("Database migrations applied successfully.")
     except Exception as e:
-        logger.warning(f"Alembic auto-migration notice: {e}. Ensuring tables via metadata...")
         Base.metadata.create_all(bind=engine)
-        logger.info("Database tables verified.")
+        logger.info(f"Database tables verified via metadata.")
 
     db_healthy = check_database_connection()
     logger.info(f"Database connectivity status: {'HEALTHY' if db_healthy else 'UNAVAILABLE'}")
@@ -124,7 +130,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 # ------------------------------------------------------------------------------
 # Root & Direct Health Check Endpoints
 # ------------------------------------------------------------------------------
-@app.get("/", tags=["Health"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
 def root():
     return {
         "status": "healthy",
@@ -135,7 +141,7 @@ def root():
     }
 
 
-@app.get("/health", tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 def health_check():
     """
     Direct health check endpoint.

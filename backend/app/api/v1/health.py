@@ -12,8 +12,9 @@ from app.api.deps import get_db
 router = APIRouter()
 
 
-@router.get(
+@router.api_route(
     "/health",
+    methods=["GET", "HEAD"],
     response_model=HealthResponse,
     summary="System Health Check",
     description="Returns the operational status, version, and database connectivity of the backend.",
