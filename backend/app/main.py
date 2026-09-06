@@ -101,9 +101,14 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # ------------------------------------------------------------------------------
 # CORS Middleware Configuration
 # ------------------------------------------------------------------------------
+cors_origins = list(settings.CORS_ORIGINS) if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
+if "https://chatgpt-pro-frontend.onrender.com" not in cors_origins:
+    cors_origins.append("https://chatgpt-pro-frontend.onrender.com")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
