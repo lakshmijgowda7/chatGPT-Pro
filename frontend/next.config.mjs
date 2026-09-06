@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
-const backendHost = process.env.BACKEND_HOST
-  ? `https://${process.env.BACKEND_HOST}`
-  : (process.env.BACKEND_INTERNAL_URL || "http://127.0.0.1:8000");
+const backendTarget =
+  process.env.BACKEND_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://chatgpt-pro-backend.onrender.com"
+    : "http://127.0.0.1:8000");
 
 const nextConfig = {
   reactStrictMode: true,
@@ -12,7 +14,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${backendHost}/api/:path*`,
+        destination: `${backendTarget}/api/:path*`,
       },
     ];
   },

@@ -33,7 +33,7 @@ services:
       - key: LLM_MODEL
         value: qwen/qwen3.8-27b
       - key: CORS_ORIGINS
-        value: '["*"]'
+        value: '["*","https://chatgpt-pro-frontend.onrender.com"]'
 
   # ============================================================================
   # 2. ChatGPT Pro Next.js Frontend Service (24/7 Cloud Host)
@@ -53,8 +53,5 @@ services:
         value: "--max-old-space-size=400"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
-      - key: BACKEND_HOST
-        fromService:
-          type: web
-          name: chatgpt-pro-backend
-          property: host
+      - key: BACKEND_URL
+        value: https://chatgpt-pro-backend.onrender.com
