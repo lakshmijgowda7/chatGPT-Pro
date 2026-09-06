@@ -129,12 +129,51 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         );
       }
 
+      // Helper to strip # and * symbols and render clean text
+      const renderCleanText = (text: string) => {
+        const lines = text.split("\n");
+        return lines.map((line, lineIdx) => {
+          const isHeading = /^#{1,6}\s+/.test(line);
+          let cleanLine = line.replace(/^#{1,6}\s+/, "");
+          cleanLine = cleanLine.replace(/^(\s*)\*\s+/gm, "$1• ");
+          const tokens = cleanLine.split(/(\*\*[^*]+?\*\*|\*[^*]+?\*)/g);
+
+          return (
+            <div
+              key={lineIdx}
+              className={cn(
+                "min-h-[1.3rem] leading-relaxed",
+                isHeading ? "font-semibold text-white text-base md:text-lg mt-2 mb-1" : ""
+              )}
+            >
+              {tokens.map((token, tokenIdx) => {
+                if (token.startsWith("**") && token.endsWith("**") && token.length >= 4) {
+                  return (
+                    <strong key={tokenIdx} className="font-semibold text-white">
+                      {token.slice(2, -2).replace(/[\*#]/g, "")}
+                    </strong>
+                  );
+                }
+                if (token.startsWith("*") && token.endsWith("*") && token.length >= 2) {
+                  return (
+                    <span key={tokenIdx} className="font-medium text-gray-100">
+                      {token.slice(1, -1).replace(/[\*#]/g, "")}
+                    </span>
+                  );
+                }
+                return <span key={tokenIdx}>{token.replace(/[\*#]/g, "")}</span>;
+              })}
+            </div>
+          );
+        });
+      };
+
       return (
         <div
           key={index}
-          className="whitespace-pre-wrap leading-relaxed text-sm md:text-base text-gray-200 break-words"
+          className="space-y-1 text-sm md:text-base text-gray-200 break-words"
         >
-          {part.content}
+          {renderCleanText(part.content)}
         </div>
       );
     });
