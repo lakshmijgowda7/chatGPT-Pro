@@ -14,12 +14,13 @@ export function useChat(
   onStreamComplete?: () => void
 ) {
   const { user } = useAuth();
+  // Any real email (like gmail) is an authenticated Pro user, NOT a guest
   const isGuest = Boolean(
-    user?.profile?.is_anonymous ||
-    user?.id?.startsWith("guest_") ||
-    user?.email?.startsWith("guest_") ||
-    user?.email?.toLowerCase().includes("guest")
-  );
+    !user ||
+    user?.profile?.is_anonymous === true ||
+    user?.email?.includes("@localgpt.user") ||
+    user?.email?.startsWith("guest_")
+  ) && !user?.email?.includes("@gmail.com") && !user?.email?.includes("@");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -199,7 +200,8 @@ export function useChat(
                       onConversationCreated(data.conversation_id);
                     }
                   } else if (data.type === "token") {
-                    accumulatedText += data.token;
+                    const cleanToken = (data.token || "").replace(/[\*#]/g, "");
+                    accumulatedText += cleanToken;
                     setMessages((prev) =>
                       prev.map((m) =>
                         m.id === assistantMsgId
@@ -208,10 +210,11 @@ export function useChat(
                       )
                     );
                   } else if (data.type === "done") {
+                    const cleanFinal = (data.content || accumulatedText).replace(/[\*#]/g, "");
                     setMessages((prev) =>
                       prev.map((m) =>
                         m.id === assistantMsgId
-                          ? { ...m, id: data.message_id || assistantMsgId, content: data.content, sources: retrievedSources }
+                          ? { ...m, id: data.message_id || assistantMsgId, content: cleanFinal, sources: retrievedSources }
                           : m
                       )
                     );

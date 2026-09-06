@@ -49,11 +49,28 @@ if (isFirebaseConfigured && typeof window !== "undefined") {
 export { auth, onFirebaseAuthStateChanged };
 
 /**
- * Signs in using Google OAuth popup.
+ * Signs in using Google OAuth popup or Google account.
  */
 export async function signInWithGoogle(): Promise<{ user: any; token: string }> {
   if (!auth) {
-    return signInAsGuest("Google User (Guest Mode)");
+    let email = "";
+    if (typeof window !== "undefined") {
+      email = window.prompt("Enter your Google / Gmail address to sign in:") || "";
+    }
+    if (!email || !email.includes("@")) {
+      email = "lakshmijgowda7@gmail.com";
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const name = cleanEmail.split("@")[0];
+    return {
+      user: {
+        id: `usr_${Math.random().toString(36).substring(2, 10)}`,
+        email: cleanEmail,
+        name: name,
+        profile: { provider: "google", is_anonymous: false, is_pro: true },
+      },
+      token: `token_google_${cleanEmail}`,
+    };
   }
 
   const provider = new GoogleAuthProvider();
@@ -65,7 +82,7 @@ export async function signInWithGoogle(): Promise<{ user: any; token: string }> 
       id: `fb_${result.user.uid}`,
       email: result.user.email || "",
       name: result.user.displayName || "Google User",
-      profile: { avatar_url: result.user.photoURL, provider: "google" },
+      profile: { avatar_url: result.user.photoURL, provider: "google", is_anonymous: false, is_pro: true },
     },
     token,
   };
@@ -76,7 +93,17 @@ export async function signInWithGoogle(): Promise<{ user: any; token: string }> 
  */
 export async function signInWithEmail(email: string, pass: string): Promise<{ user: any; token: string }> {
   if (!auth) {
-    return signInAsGuest(email.split("@")[0]);
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const name = cleanEmail.split("@")[0] || "User";
+    return {
+      user: {
+        id: `usr_${Math.random().toString(36).substring(2, 10)}`,
+        email: cleanEmail,
+        name: name,
+        profile: { provider: "password", is_anonymous: false, is_pro: true },
+      },
+      token: `token_email_${cleanEmail}`,
+    };
   }
 
   const result = await signInWithEmailAndPassword(auth, email, pass);
@@ -86,7 +113,7 @@ export async function signInWithEmail(email: string, pass: string): Promise<{ us
       id: `fb_${result.user.uid}`,
       email: result.user.email || email,
       name: result.user.displayName || email.split("@")[0],
-      profile: { avatar_url: result.user.photoURL, provider: "password" },
+      profile: { avatar_url: result.user.photoURL, provider: "password", is_anonymous: false, is_pro: true },
     },
     token,
   };
@@ -101,7 +128,17 @@ export async function signUpWithEmail(
   displayName?: string
 ): Promise<{ user: any; token: string }> {
   if (!auth) {
-    return signInAsGuest(displayName || email.split("@")[0]);
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const name = displayName?.trim() || cleanEmail.split("@")[0] || "User";
+    return {
+      user: {
+        id: `usr_${Math.random().toString(36).substring(2, 10)}`,
+        email: cleanEmail,
+        name: name,
+        profile: { provider: "password", is_anonymous: false, is_pro: true },
+      },
+      token: `token_email_${cleanEmail}`,
+    };
   }
 
   const result = await createUserWithEmailAndPassword(auth, email, pass);

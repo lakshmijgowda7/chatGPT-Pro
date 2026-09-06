@@ -98,7 +98,7 @@ async def create_chat_completion(
             top_p=payload.top_p or 0.9,
             max_tokens=payload.max_tokens or 1024,
         )
-        content = res["content"]
+        content = (res["content"] or "").replace("*", "").replace("#", "")
     except Exception as e:
         content = f"I apologize, but an error occurred while generating a response: {str(e)}"
 
@@ -171,8 +171,9 @@ async def stream_chat_completion(
                 top_p=payload.top_p or 0.9,
                 max_tokens=payload.max_tokens or 1024,
             ):
-                full_text += token
-                yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
+                clean_token = token.replace("*", "").replace("#", "")
+                full_text += clean_token
+                yield f"data: {json.dumps({'type': 'token', 'token': clean_token})}\n\n"
         except Exception as err:
             err_msg = f"\n\n[Streaming Error: {str(err)}]"
             full_text += err_msg
