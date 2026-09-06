@@ -23,32 +23,15 @@ from app.models.message import Message
 
 router = APIRouter()
 
-GUEST_MAX_CHATS = 5
+GUEST_MAX_CHATS = None  # Unlimited chats for Instant Guest Pass and all users
 
 
 def _check_guest_chat_limit(db: Session, current_user: Optional[User]) -> None:
     """
-    Restricts guest/unauthenticated users to a maximum of 5 chats.
-    Requires signing in with Google or Email for unlimited ChatGPT Pro chats.
+    Guest sessions created with 'Instant Guest Pass' have unlimited chats without restriction.
     """
-    is_guest = (
-        current_user is None
-        or current_user.id.startswith("guest_")
-        or (current_user.profile and (current_user.profile.get("is_anonymous") or current_user.profile.get("provider") in ("anonymous", "guest_fallback")))
-        or "guest" in current_user.email.lower()
-    )
-    if is_guest and current_user:
-        guest_msg_count = (
-            db.query(Message)
-            .join(Conversation, Message.conversation_id == Conversation.id)
-            .filter(Conversation.user_id == current_user.id, Message.role == "user")
-            .count()
-        )
-        if guest_msg_count >= GUEST_MAX_CHATS:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Guest chat limit reached ({guest_msg_count}/{GUEST_MAX_CHATS} chats used). Please sign in with Google or Email to unlock unlimited ChatGPT Pro chats!",
-            )
+    pass
+
 
 
 @router.post("/completions", response_model=ChatCompletionResponse)

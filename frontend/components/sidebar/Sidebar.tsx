@@ -168,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-[11px] hover:opacity-95 transition-all shadow"
               >
                 <Sparkles size={12} />
-                <span>Switch to Google (Unlimited)</span>
+                <span>Switch to Google Account</span>
               </button>
             )}
           </div>
