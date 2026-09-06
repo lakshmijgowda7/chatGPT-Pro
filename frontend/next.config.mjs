@@ -7,9 +7,6 @@ const backendTarget =
 
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    NEXT_PUBLIC_API_URL: "/api/v1",
-  },
   async rewrites() {
     return [
       {
